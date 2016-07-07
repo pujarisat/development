@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * XML parser for the vCenter configuration file
- *
+ * 
  * @author soehnges
  */
 public class LoadBalancerConfiguration {
@@ -60,6 +60,13 @@ public class LoadBalancerConfiguration {
         xmlConfig = new XMLHostConfiguration();
         xmlConfig.load(new StringReader(xmlData));
 
+        balancer = parseBalancer(xmlConfig, HostBalancer.class,
+                EquipartitionHostBalancer.class, inventory);
+
+        if (!(balancer instanceof SequentialHostBalancer)) {
+            return;
+        }
+
         List<HierarchicalConfiguration> hosts = xmlConfig
                 .configurationsAt(ELEMENT_HOST);
 
@@ -72,12 +79,12 @@ public class LoadBalancerConfiguration {
                         + " is not available in the inventory.");
             } else {
                 vmHost.setEnabled(host.getBoolean("[@enabled]", false));
-                vmHost.setMemoryLimit(
-                        VMwareValue.parse(host.getString("[@memory_limit]")));
-                vmHost.setCPULimit(
-                        VMwareValue.parse(host.getString("[@cpu_limit]")));
-                vmHost.setVMLimit(
-                        VMwareValue.parse(host.getString("[@vm_limit]")));
+                vmHost.setMemoryLimit(VMwareValue.parse(host
+                        .getString("[@memory_limit]")));
+                vmHost.setCPULimit(VMwareValue.parse(host
+                        .getString("[@cpu_limit]")));
+                vmHost.setVMLimit(VMwareValue.parse(host
+                        .getString("[@vm_limit]")));
                 hostList.add(vmHost);
 
                 VMwareBalancer<VMwareStorage> stb = parseBalancer(host,
@@ -97,13 +104,12 @@ public class LoadBalancerConfiguration {
                         + " is not available in the inventory.");
             } else {
                 vmStorage.setEnabled(storage.getBoolean("[@enabled]", false));
-                vmStorage.setLimit(VMwareValue
-                        .parse(storage.getString("[@limit]", "90%")));
+                vmStorage.setLimit(VMwareValue.parse(storage.getString(
+                        "[@limit]", "90%")));
                 storageList.add(vmStorage);
             }
         }
-        balancer = parseBalancer(xmlConfig, HostBalancer.class,
-                EquipartitionHostBalancer.class, inventory);
+
     }
 
     @SuppressWarnings("unchecked")
