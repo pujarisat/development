@@ -71,9 +71,12 @@ public class ClosedMarketplaceFilter extends BaseBesFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
         if (!httpRequest.getServletPath().matches(excludeUrlPattern)) {
-            String mId = (String) httpRequest.getSession()
-                    .getAttribute(Constants.REQ_PARAM_MARKETPLACE_ID);
-
+            String mId = httpRequest
+                    .getParameter(Constants.REQ_PARAM_MARKETPLACE_ID);
+            if (mId == null || mId.equals("")) {
+                mId = (String) httpRequest.getSession()
+                        .getAttribute(Constants.REQ_PARAM_MARKETPLACE_ID);
+            }
             if (mId == null || mId.equals("")) {
                 if (isSAMLAuthentication()) {
                     redirector.forward(httpRequest, httpResponse,
