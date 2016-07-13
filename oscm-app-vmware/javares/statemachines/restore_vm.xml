@@ -4,7 +4,8 @@
   <state id="BEGIN" action="restoreSnapshot">
     <event id="run" state="INSPECT" />
     <event id="success" state="END" />
-    <event id="fail" state="ERROR" />
+    <event id="failed" state="ERROR" />
+    <event id="error" state="ERROR" />
   </state>
   
   <state id="INSPECT" action="inspectTaskResult">

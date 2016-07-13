@@ -12,6 +12,7 @@ import org.oscm.app.v1_0.data.InstanceStatus;
 import org.oscm.app.v1_0.data.ProvisioningSettings;
 import org.oscm.app.vmware.business.VMPropertyHandler;
 import org.oscm.app.vmware.business.statemachine.api.StateMachineAction;
+import org.oscm.app.vmware.i18n.Messages;
 import org.oscm.app.vmware.remote.vmware.VMClientPool;
 import org.oscm.app.vmware.remote.vmware.VMwareClient;
 import org.slf4j.Logger;
@@ -47,11 +48,15 @@ public class RestoreActions extends Actions {
                     ph.getServiceSetting(VMPropertyHandler.SNAPSHOT_ID));
 
             if (snapshot == null) {
-                logger.info("Found no snapshot to restore for instance "
+                logger.error("Found no snapshot to restore for instance "
                         + instanceId + ", virtual system '"
                         + ph.getInstanceName() + "' and snapshot id "
                         + ph.getServiceSetting(VMPropertyHandler.SNAPSHOT_ID));
-                return EVENT_SUCCESS;
+
+                String message = Messages.get(ph.getLocale(),
+                        "error_restore_snapshot", new Object[] { instanceId });
+                ph.setSetting(VMPropertyHandler.SM_ERROR_MESSAGE, message);
+                return EVENT_ERROR;
             }
 
             ManagedObjectReference targetHost = null;

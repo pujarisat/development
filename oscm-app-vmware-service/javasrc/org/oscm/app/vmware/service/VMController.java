@@ -475,7 +475,12 @@ public class VMController implements APPlatformController {
                         "restore_vm.xml");
                 break;
             }
+
+            // when a valid operation has been requested, let the timer
+            // handle the instance afterwards
             InstanceStatus result = new InstanceStatus();
+            result.setRunWithTimer(true);
+            result.setIsReady(false);
             result.setChangedParameters(settings.getParameters());
             return result;
         } catch (Exception t) {
