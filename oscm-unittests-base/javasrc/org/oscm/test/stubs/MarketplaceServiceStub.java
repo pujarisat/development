@@ -7,6 +7,8 @@ package org.oscm.test.stubs;
 import java.util.List;
 import java.util.Set;
 
+import javax.security.auth.login.LoginException;
+
 import org.oscm.internal.intf.MarketplaceService;
 import org.oscm.internal.types.exception.ConcurrentModificationException;
 import org.oscm.internal.types.exception.MarketplaceAccessTypeUneligibleForOperationException;
@@ -25,8 +27,6 @@ import org.oscm.internal.vo.VOMarketplace;
 import org.oscm.internal.vo.VOOrganization;
 import org.oscm.internal.vo.VOService;
 import org.oscm.internal.vo.VOServiceDetails;
-
-import javax.security.auth.login.LoginException;
 
 public class MarketplaceServiceStub implements MarketplaceService {
 
@@ -167,11 +167,10 @@ public class MarketplaceServiceStub implements MarketplaceService {
         return null;
     }
 
-
-
     @Override
-    public void grantAccessToMarketPlaceToOrganization(VOMarketplace voMarketplace, VOOrganization voOrganization)
-        throws ValidationException, NonUniqueBusinessKeyException {
+    public void grantAccessToMarketPlaceToOrganization(
+            VOMarketplace voMarketplace, VOOrganization voOrganization)
+            throws ValidationException, NonUniqueBusinessKeyException {
 
     }
 
@@ -188,21 +187,25 @@ public class MarketplaceServiceStub implements MarketplaceService {
     }
 
     @Override
-    public boolean doesOrganizationHaveAccessMarketplace(String marketplaceId, String organizationId)
-        throws LoginException {
+    public boolean doesOrganizationHaveAccessMarketplace(String marketplaceId,
+            String organizationId) throws LoginException {
         return false;
     }
 
     @Override
     public void closeMarketplace(String marketplaceId,
             Set<Long> authorizedOrganizations,
-            Set<Long> unauthorizedOrganizations,
-            Set<Long> organizationsWithSubsToSuspend)
-                    throws OperationNotPermittedException,
-                    ObjectNotFoundException, NonUniqueBusinessKeyException,
-                    TechnicalServiceNotAliveException,
-                    TechnicalServiceOperationException {
-        throw new UnsupportedOperationException();  
+            Set<Long> unauthorizedOrganizations)
+            throws OperationNotPermittedException, ObjectNotFoundException,
+            NonUniqueBusinessKeyException, TechnicalServiceNotAliveException,
+            TechnicalServiceOperationException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<VOOrganization> getAllOrganizationsWithAccessToMarketplace(
+            String marketplaceId) {
+        throw new UnsupportedOperationException();
     }
 
 }

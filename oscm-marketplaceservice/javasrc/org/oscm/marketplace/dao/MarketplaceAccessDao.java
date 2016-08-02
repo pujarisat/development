@@ -7,15 +7,17 @@
  *******************************************************************************/
 package org.oscm.marketplace.dao;
 
-import org.oscm.converter.ParameterizedTypes;
-import org.oscm.dataservice.local.DataService;
-import org.oscm.domobjects.MarketplaceAccess;
+import java.util.List;
 
 import javax.ejb.EJB;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.persistence.Query;
-import java.util.List;
+
+import org.oscm.converter.ParameterizedTypes;
+import org.oscm.dataservice.local.DataService;
+import org.oscm.domobjects.MarketplaceAccess;
+import org.oscm.domobjects.Organization;
 
 /**
  * Created by BadziakP on 2016-05-23.
@@ -42,13 +44,15 @@ public class MarketplaceAccessDao {
         query.executeUpdate();
     }
 
-    public List<Object[]> getOrganizationsWithMplAndSubscriptions(long marketplaceKey) {
+    public List<Object[]> getOrganizationsWithMplAndSubscriptions(
+            long marketplaceKey) {
 
         String querySelect = "SELECT o.tkey as orgKey, "
                 + "o.organizationid as orgId, "
                 + "o.name as name, "
                 + "(SELECT true FROM marketplaceaccess ma where ma.organization_tkey=o.tkey and ma.marketplace_tkey=:marketplaceKey) as hasAccess, "
-                + "(SELECT count(s.tkey) FROM subscription s WHERE s.organizationkey=o.tkey AND s.marketplace_tkey=:marketplaceKey AND s.status<>'SUSPENDED') as subscriptions "
+                + "(SELECT count(s.tkey) FROM subscription s WHERE s.organizationkey=o.tkey AND s.marketplace_tkey=:marketplaceKey AND s.status<>'DEACTIVATED') as subscriptions, "
+                + "(SELECT count(p.tkey) FROM product p INNER JOIN catalogentry c ON c.product_tkey=p.tkey WHERE c.marketplace_tkey=:marketplaceKey AND p.vendorkey=o.tkey AND p.status='ACTIVE') as publishedServices "
                 + "FROM organization o";
 
         Query query = dataService.createNativeQuery(querySelect);
@@ -56,6 +60,18 @@ public class MarketplaceAccessDao {
         query.setParameter("marketplaceKey", Long.valueOf(marketplaceKey));
 
         return ParameterizedTypes.list(query.getResultList(), Object[].class);
+    }
+
+    public List<Organization> getAllOrganizationsWithAccessToMarketplace(
+            long marketplaceKey) {
+
+        String queryString = "SELECT o.* FROM organization o INNER JOIN marketplaceaccess ma ON o.tkey = ma.organization_tkey WHERE ma.marketplace_tkey = :marketplaceKey";
+
+        Query query = dataService.createNativeQuery(queryString,
+                Organization.class);
+        query.setParameter("marketplaceKey", new Long(marketplaceKey));
+
+        return query.getResultList();
     }
 
 }

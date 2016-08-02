@@ -45,7 +45,9 @@
 
     <!-- header -->
     <mp:header user="#{userBean.loggedInUser}" loginHandler="showLoginPanel('#{defaultLoginRedirect}');return false;" />
-    <ui:include src="../login.xhtml" />
+    <ui:include src="../login.xhtml">
+      <ui:param name="canCloseLogin" value="#{not isMplRestricted}" />
+    </ui:include>
 
     <!-- body -->
     <div class="bodyarea">
@@ -190,11 +192,16 @@
     var currentViewId = "#{facesContext.viewRoot.viewId}";
     var recoverPasswordView = currentViewId.indexOf("recoverPassword.xhtml");
     var confirmRecoverPasswordView = currentViewId.indexOf("confirmStartPwdRecovery.xhtml");
-    if(#{isMplRestricted and empty userBean.loggedInUser}){
+    if(#{isMplRestricted and empty userBean.loggedInUser and userBean.internalAuthMode}){
       if (recoverPasswordView == -1 &amp;&amp; confirmRecoverPasswordView == -1) {
     	  showLoginPanel('/marketplace/index.jsf');
     	}
     }
+    $(document).ready(function() {
+       if(#{isMplRestricted and empty userBean.loggedInUser and not userBean.internalAuthMode}){
+      document.getElementById('formLogin:loginLink').click();
+    }
+    });
   </script>
   <h:outputText escape="false" value="#{trackingCodeCtrl.trackingCodeForCurrentMarketplace}" />
 

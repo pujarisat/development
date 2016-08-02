@@ -12,29 +12,34 @@ package org.oscm.ui.beans;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
+import javax.faces.bean.ApplicationScoped;
 import javax.faces.bean.ManagedBean;
-import javax.faces.bean.SessionScoped;
+import javax.servlet.http.HttpServletRequest;
 
+import org.oscm.internal.intf.MarketplaceService;
+import org.oscm.internal.types.exception.ObjectNotFoundException;
+import org.oscm.internal.vo.VOMarketplace;
+import org.oscm.internal.vo.VOOrganization;
 import org.oscm.logging.Log4jLogger;
 import org.oscm.logging.LoggerFactory;
 import org.oscm.types.enumtypes.LogMessageIdentifier;
 import org.oscm.ui.common.JSFUtils;
 import org.oscm.ui.common.ServiceAccess;
 import org.oscm.ui.model.MarketplaceConfiguration;
-import org.oscm.internal.intf.MarketplaceService;
-import org.oscm.internal.types.exception.ObjectNotFoundException;
-import org.oscm.internal.vo.VOMarketplace;
 
 /**
- * Session scope bean for caching marketplace configurations.
+ * Application scope bean for caching marketplace configurations.
  * 
  * @author Zou
  * 
  */
-@SessionScoped
-@ManagedBean(name="marketplaceConfigurationBean")
+@ApplicationScoped
+@ManagedBean(name = "marketplaceConfigurationBean")
 public class MarketplaceConfigurationBean implements Serializable {
 
     private static final long serialVersionUID = -3521386101907735868L;
@@ -54,27 +59,43 @@ public class MarketplaceConfigurationBean implements Serializable {
     /**
      * @return the marketspaceService
      */
-    protected MarketplaceService getMarketplaceService() {
+    protected MarketplaceService getMarketplaceService(
+            HttpServletRequest request) {
         if (marketplaceService == null) {
-            // Get MarketspaceService from Session
-            marketplaceService = ServiceAccess.getServiceAcccessFor(
-                    JSFUtils.getRequest().getSession()).getService(
-                    MarketplaceService.class);
+            // Get MarketplaceService from Session
+            if (request != null) {
+                marketplaceService = ServiceAccess.getServiceAcccessFor(
+                        request.getSession()).getService(
+                        MarketplaceService.class);
+            } else {
+                marketplaceService = ServiceAccess.getServiceAcccessFor(
+                        JSFUtils.getRequest().getSession()).getService(
+                        MarketplaceService.class);
+            }
         }
         return marketplaceService;
+    }
+
+    protected MarketplaceService getMarketplaceService() {
+        return getMarketplaceService(null);
     }
 
     /**
      * Get corresponding MarketplaceConfiguration using specified MarketplaceId
      */
-    MarketplaceConfiguration getConfiguration(String marketplaceId) {
+    public MarketplaceConfiguration getConfiguration(String marketplaceId,
+            HttpServletRequest request) {
         MarketplaceConfiguration conf = configurationCache.get(marketplaceId);
         if (conf == null) {
             conf = new MarketplaceConfiguration();
             VOMarketplace voMarketPlace = null;
+            List<VOOrganization> allowedOrgs = null;
             try {
-                voMarketPlace = getMarketplaceService().getMarketplaceById(
-                        marketplaceId);
+                voMarketPlace = getMarketplaceService(request)
+                        .getMarketplaceById(marketplaceId);
+                allowedOrgs = getMarketplaceService(request)
+                        .getAllOrganizationsWithAccessToMarketplace(
+                                marketplaceId);
             } catch (ObjectNotFoundException e) {
                 // Should not happen, because already checked by
                 // MarketplaceContextFilter
@@ -84,12 +105,23 @@ public class MarketplaceConfigurationBean implements Serializable {
                         marketplaceId);
                 return new MarketplaceConfiguration();
             }
+
+            Set<String> idSet = new TreeSet<String>();
+            for (VOOrganization org : allowedOrgs) {
+                idSet.add(org.getOrganizationId());
+            }
+
             // Copy related attribute from VOMarketplace to
             // MarketplaceConfiguration
             copyAttribute(voMarketPlace, conf);
+            conf.setAllowedOrganizations(idSet);
             configurationCache.put(marketplaceId, conf);
         }
         return conf;
+    }
+
+    public MarketplaceConfiguration getConfiguration(String marketplaceId) {
+        return getConfiguration(marketplaceId, null);
     }
 
     /**
@@ -102,6 +134,8 @@ public class MarketplaceConfigurationBean implements Serializable {
         conf.setSocialBookmarkEnabled(voMarketPlace.isSocialBookmarkEnabled());
         conf.setTaggingEnabled(voMarketPlace.isTaggingEnabled());
         conf.setCategoriesEnabled(voMarketPlace.isCategoriesEnabled());
+        conf.setRestricted(voMarketPlace.isRestricted());
+        conf.setLandingPage(voMarketPlace.isHasPublicLandingPage());
     }
 
     /**
