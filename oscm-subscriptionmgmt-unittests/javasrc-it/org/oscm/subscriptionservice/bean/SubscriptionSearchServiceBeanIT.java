@@ -10,6 +10,7 @@ import static org.junit.Assert.fail;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -30,10 +31,18 @@ import org.oscm.test.data.Organizations;
 import org.oscm.test.data.Products;
 import org.oscm.test.data.Subscriptions;
 import org.oscm.test.data.TechnicalProducts;
+import org.oscm.test.ejb.FifoJMSQueue;
 import org.oscm.test.ejb.TestContainer;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SubscriptionSearchServiceBeanIT extends EJBTestBase {
+
+    @BeforeClass
+    public static void before() throws Exception {
+        PERSISTENCE.clearEntityManagerFactoryCache();
+        FifoJMSQueue indexerQueue = createIndexerQueue();
+        indexerQueue.clear();
+    }
 
     private SubscriptionSearchService sssb = new SubscriptionSearchServiceBean();
 
@@ -42,6 +51,8 @@ public class SubscriptionSearchServiceBeanIT extends EJBTestBase {
         DataService ds = new DataServiceBean();
 
         enableHibernateSearchListeners(true);
+        FifoJMSQueue indexerQueue = createIndexerQueue();
+        indexerQueue.clear();
         container.addBean(ds);
         container.addBean(sssb);
 
@@ -130,4 +141,5 @@ public class SubscriptionSearchServiceBeanIT extends EJBTestBase {
         });
 
     }
+
 }
