@@ -142,7 +142,6 @@ public class Converter {
             Class<To> to, DataService ds) {
         ConversionStrategy<From, To> converter = ConversionFactory
                 .getConverter(from, to, ds);
-        converter.setDataService(ds);
         return  converter.convert(object);
     }
 
