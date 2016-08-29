@@ -24,7 +24,8 @@ public class ToExtParameterStrategy extends AbstractConversionStrategy implement
         voParameter.setVersion(parameter.getVersion());
         voParameter.setConfigurable(parameter.isConfigurable());
         voParameter.setValue(parameter.getValue());
-        voParameter.setParameterDefinition(Converter.convert(parameter.getParameterDefinition(), ParameterDefinition.class, VOParameterDefinition.class));
+        voParameter.setParameterDefinition(Converter.convert(parameter.getParameterDefinition(), ParameterDefinition.class,
+                VOParameterDefinition.class, getDataService()));
 
         return voParameter;
     }
