@@ -8,19 +8,20 @@
 
 package org.oscm.billingservice.setup;
 
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 import javax.persistence.NoResultException;
 import javax.persistence.Query;
 
 import org.junit.AfterClass;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.oscm.accountservice.bean.AccountServiceBean;
 import org.oscm.accountservice.bean.MarketingPermissionServiceBean;
 import org.oscm.accountservice.bean.UserLicenseServiceLocalBean;
@@ -35,11 +36,7 @@ import org.oscm.billingservice.business.calculation.revenue.RevenueCalculatorBea
 import org.oscm.billingservice.business.calculation.share.SharesCalculatorBean;
 import org.oscm.billingservice.dao.BillingDataRetrievalServiceBean;
 import org.oscm.billingservice.dao.SharesDataRetrievalServiceBean;
-import org.oscm.billingservice.evaluation.BillingResultEvaluator;
-import org.oscm.billingservice.evaluation.BrokerShareResultEvaluator;
-import org.oscm.billingservice.evaluation.MarketplaceShareResultEvaluator;
-import org.oscm.billingservice.evaluation.ResellerShareResultEvaluator;
-import org.oscm.billingservice.evaluation.SupplierShareResultEvaluator;
+import org.oscm.billingservice.evaluation.*;
 import org.oscm.billingservice.service.BillingServiceBean;
 import org.oscm.billingservice.service.BillingServiceLocal;
 import org.oscm.billingservice.service.model.BillingRun;
@@ -48,14 +45,7 @@ import org.oscm.converter.DateConverter;
 import org.oscm.converter.XMLConverter;
 import org.oscm.dataservice.bean.DataServiceBean;
 import org.oscm.dataservice.local.DataService;
-import org.oscm.domobjects.BillingResult;
-import org.oscm.domobjects.BillingSharesResult;
-import org.oscm.domobjects.CatalogEntry;
-import org.oscm.domobjects.ConfigurationSetting;
-import org.oscm.domobjects.Marketplace;
-import org.oscm.domobjects.PlatformUser;
-import org.oscm.domobjects.Subscription;
-import org.oscm.domobjects.TriggerProcess;
+import org.oscm.domobjects.*;
 import org.oscm.eventservice.bean.EventServiceBean;
 import org.oscm.i18nservice.bean.ImageResourceServiceBean;
 import org.oscm.i18nservice.bean.LocalizerServiceBean;
@@ -91,21 +81,10 @@ import org.oscm.reviewservice.bean.ReviewServiceLocalBean;
 import org.oscm.reviewservice.dao.ProductReviewDao;
 import org.oscm.serviceprovisioningservice.auditlog.PriceModelAuditLogCollector;
 import org.oscm.serviceprovisioningservice.auditlog.ServiceAuditLogCollector;
-import org.oscm.serviceprovisioningservice.bean.BillingAdapterLocalBean;
-import org.oscm.serviceprovisioningservice.bean.SearchServiceBean;
-import org.oscm.serviceprovisioningservice.bean.ServiceProvisioningPartnerServiceLocalBean;
-import org.oscm.serviceprovisioningservice.bean.ServiceProvisioningServiceBean;
-import org.oscm.serviceprovisioningservice.bean.ServiceProvisioningServiceLocalizationBean;
-import org.oscm.serviceprovisioningservice.bean.TagServiceBean;
+import org.oscm.serviceprovisioningservice.bean.*;
 import org.oscm.sessionservice.local.SessionServiceLocal;
 import org.oscm.subscriptionservice.auditlog.SubscriptionAuditLogCollector;
-import org.oscm.subscriptionservice.bean.ManageSubscriptionBean;
-import org.oscm.subscriptionservice.bean.ModifyAndUpgradeSubscriptionBean;
-import org.oscm.subscriptionservice.bean.SubscriptionListServiceBean;
-import org.oscm.subscriptionservice.bean.SubscriptionServiceBean;
-import org.oscm.subscriptionservice.bean.SubscriptionUtilBean;
-import org.oscm.subscriptionservice.bean.TerminateSubscriptionBean;
-import org.oscm.subscriptionservice.bean.ValidateSubscriptionStateBean;
+import org.oscm.subscriptionservice.bean.*;
 import org.oscm.subscriptionservice.local.SubscriptionServiceLocal;
 import org.oscm.taskhandling.local.TaskQueueServiceLocal;
 import org.oscm.techproductoperation.bean.OperationRecordServiceLocalBean;
@@ -117,12 +96,7 @@ import org.oscm.test.DateTimeHandling;
 import org.oscm.test.StaticEJBTestBase;
 import org.oscm.test.TestDateFactory;
 import org.oscm.test.ejb.TestContainer;
-import org.oscm.test.stubs.AccountServiceStub;
-import org.oscm.test.stubs.CategorizationServiceStub;
-import org.oscm.test.stubs.ConfigurationServiceStub;
-import org.oscm.test.stubs.IdentityServiceStub;
-import org.oscm.test.stubs.MarketplaceServiceStub;
-import org.oscm.test.stubs.TriggerQueueServiceStub;
+import org.oscm.test.stubs.*;
 import org.oscm.timerservice.bean.TimerServiceBean;
 import org.oscm.triggerservice.local.TriggerMessage;
 import org.oscm.triggerservice.local.TriggerProcessMessageData;
@@ -251,7 +225,7 @@ public class BillingIntegrationTestBase extends StaticEJBTestBase {
         container.addBean(new LocalizerServiceBean());
         container.addBean(mock(SessionServiceLocal.class));
         container.addBean(mock(ApplicationServiceLocal.class));
-        addIdentityServiceStub(container);
+        addIdentityService(container);
         addTenantProvisioningServiceStub(container);
         container.addBean(mock(CommunicationServiceLocal.class));
         container.addBean(mock(ImageResourceServiceLocal.class));
@@ -397,21 +371,16 @@ public class BillingIntegrationTestBase extends StaticEJBTestBase {
         });
     }
 
-    private static void addIdentityServiceStub(final TestContainer container)
+    private static void addIdentityService(final TestContainer container)
             throws Exception {
-        container.addBean(new IdentityServiceStub() {
+        IdentityServiceBean isMock = mock(IdentityServiceBean.class);
+        doNothing().when(isMock).sendMailToCreatedUser(anyString(), anyBoolean(), any(Marketplace.class), any(PlatformUser.class));
+        given(isMock.getPlatformUser(anyString(), anyBoolean())).willAnswer(new Answer<PlatformUser>() {
             @Override
-            public void sendMailToCreatedUser(String password,
-                    boolean userLocalLdap, Marketplace marketplace,
-                    PlatformUser pu) {
-            }
-
-            @Override
-            public PlatformUser getPlatformUser(String userId,
-                    boolean validateOrganization) {
-                PlatformUser user = null;
+            public PlatformUser answer(InvocationOnMock invocation) throws Throwable {
+                PlatformUser user;
                 try {
-                    user = identityServiceLocal.getPlatformUser(userId, false);
+                    user = identityServiceLocal.getPlatformUser((String) invocation.getArguments()[0], false);
                 } catch (ObjectNotFoundException e) {
                     throw new UnsupportedOperationException();
                 } catch (OperationNotPermittedException e) {
@@ -420,6 +389,8 @@ public class BillingIntegrationTestBase extends StaticEJBTestBase {
                 return user;
             }
         });
+        container.addBean(isMock);
+
     }
 
     private static void basicDataSetup(final boolean basicSetupRequired)

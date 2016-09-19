@@ -22,34 +22,22 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.junit.Test;
-
 import org.oscm.converter.PriceConverter;
 import org.oscm.dataservice.bean.DataServiceBean;
 import org.oscm.dataservice.local.DataService;
-import org.oscm.domobjects.BillingResult;
-import org.oscm.domobjects.Marketplace;
-import org.oscm.domobjects.Organization;
-import org.oscm.domobjects.PlatformUser;
-import org.oscm.domobjects.Product;
-import org.oscm.domobjects.Subscription;
-import org.oscm.domobjects.TechnicalProduct;
+import org.oscm.domobjects.*;
+import org.oscm.internal.intf.IdentityService;
+import org.oscm.internal.types.enumtypes.OrganizationRoleType;
+import org.oscm.internal.types.enumtypes.ServiceAccessType;
 import org.oscm.subscriptionservice.local.SubscriptionServiceLocal;
 import org.oscm.test.EJBTestBase;
-import org.oscm.test.data.Marketplaces;
-import org.oscm.test.data.Organizations;
-import org.oscm.test.data.Products;
-import org.oscm.test.data.Subscriptions;
-import org.oscm.test.data.SupportedCurrencies;
-import org.oscm.test.data.TechnicalProducts;
+import org.oscm.test.data.*;
 import org.oscm.test.ejb.TestContainer;
 import org.oscm.test.stubs.AccountServiceStub;
 import org.oscm.test.stubs.BillingServiceStub;
 import org.oscm.test.stubs.ConfigurationServiceStub;
-import org.oscm.test.stubs.IdentityServiceStub;
 import org.oscm.test.stubs.PaymentServiceStub;
 import org.oscm.timerservice.bean.TimerServiceBean;
-import org.oscm.internal.types.enumtypes.OrganizationRoleType;
-import org.oscm.internal.types.enumtypes.ServiceAccessType;
 
 /**
  * Tests for the SQL query class for the command to get supplier revenue list.
@@ -84,7 +72,7 @@ public class SupplierRevenueSqlResultIT extends EJBTestBase {
         container.addBean(new BillingServiceStub());
         container.addBean(new AccountServiceStub());
         container.addBean(new PaymentServiceStub());
-        container.addBean(new IdentityServiceStub());
+        container.addBean(mock(IdentityService.class));
         container.addBean(mock(SubscriptionServiceLocal.class));
         container.addBean(mock(TimerServiceBean.class));
 

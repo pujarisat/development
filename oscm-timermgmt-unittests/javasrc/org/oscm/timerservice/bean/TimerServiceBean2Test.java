@@ -12,49 +12,34 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.TimeZone;
+import java.util.*;
 
-import javax.ejb.EJBException;
-import javax.ejb.NoSuchObjectLocalException;
-import javax.ejb.ScheduleExpression;
-import javax.ejb.SessionContext;
+import javax.ejb.*;
 import javax.ejb.Timer;
-import javax.ejb.TimerConfig;
 import javax.persistence.Query;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
-
 import org.oscm.accountservice.local.AccountServiceLocal;
 import org.oscm.billingservice.service.BillingServiceLocal;
 import org.oscm.configurationservice.local.ConfigurationServiceLocal;
 import org.oscm.converter.ParameterizedTypes;
 import org.oscm.dataservice.local.DataService;
 import org.oscm.domobjects.TimerProcessing;
+import org.oscm.identityservice.local.IdentityServiceLocal;
+import org.oscm.internal.types.enumtypes.ConfigurationKey;
+import org.oscm.internal.types.exception.ValidationException;
+import org.oscm.internal.vo.VOTimerInfo;
 import org.oscm.test.stubs.ConfigurationServiceStub;
-import org.oscm.test.stubs.IdentityServiceStub;
 import org.oscm.timerservice.stubs.TimerServiceStub;
 import org.oscm.timerservice.stubs.TimerStub;
 import org.oscm.types.enumtypes.Period;
 import org.oscm.types.enumtypes.TimerType;
-import org.oscm.internal.types.enumtypes.ConfigurationKey;
-import org.oscm.internal.types.exception.ValidationException;
-import org.oscm.internal.vo.VOTimerInfo;
 
 /**
  * JUnit tests for the timer management service.
@@ -76,14 +61,14 @@ public class TimerServiceBean2Test {
 
     private long now;
 
-    private IdentityServiceStub idService;
+    private IdentityServiceLocal idService;
 
     @Before
     public void setUp() {
         tm = new TimerServiceBean();
         tss = new TimerServiceStub();
         cfs = new ConfigurationServiceStub();
-        idService = new IdentityServiceStub();
+        idService = mock(IdentityServiceLocal.class);
         as = mock(AccountServiceLocal.class);
 
         query = mock(Query.class);

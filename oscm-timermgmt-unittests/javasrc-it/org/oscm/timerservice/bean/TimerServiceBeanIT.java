@@ -9,6 +9,7 @@
 package org.oscm.timerservice.bean;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -24,18 +25,17 @@ import javax.persistence.Query;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
-
 import org.oscm.billingservice.service.BillingServiceLocal;
 import org.oscm.configurationservice.local.ConfigurationServiceLocal;
 import org.oscm.dataservice.bean.DataServiceBean;
 import org.oscm.dataservice.local.DataService;
 import org.oscm.domobjects.TimerProcessing;
+import org.oscm.internal.intf.IdentityService;
 import org.oscm.subscriptionservice.local.SubscriptionServiceLocal;
 import org.oscm.test.DateTimeHandling;
 import org.oscm.test.EJBTestBase;
 import org.oscm.test.ejb.TestContainer;
 import org.oscm.test.stubs.ConfigurationServiceStub;
-import org.oscm.test.stubs.IdentityServiceStub;
 import org.oscm.test.stubs.PaymentServiceStub;
 import org.oscm.timerservice.stubs.AccountServiceStub;
 import org.oscm.timerservice.stubs.TimerServiceStub;
@@ -60,10 +60,10 @@ public class TimerServiceBeanIT extends EJBTestBase {
         container.addBean(new DataServiceBean());
         container.addBean(new ConfigurationServiceStub());
         container.addBean(accountManagementStub = new AccountServiceStub());
-        container.addBean(Mockito.mock(SubscriptionServiceLocal.class));
-        container.addBean(Mockito.mock(BillingServiceLocal.class));
+        container.addBean(mock(SubscriptionServiceLocal.class));
+        container.addBean(mock(BillingServiceLocal.class));
         container.addBean(new PaymentServiceStub());
-        container.addBean(new IdentityServiceStub());
+        container.addBean(mock(IdentityService.class));
         container.addBean(tm = new TimerServiceBean());
         tss = new TimerServiceStub() {
             @Override
@@ -82,7 +82,7 @@ public class TimerServiceBeanIT extends EJBTestBase {
                 return null;
             }
         };
-        ctx = Mockito.mock(SessionContext.class);
+        ctx = mock(SessionContext.class);
         Mockito.when(ctx.getTimerService()).thenReturn(tss);
         tm.ctx = ctx;
         mgr = container.get(DataService.class);

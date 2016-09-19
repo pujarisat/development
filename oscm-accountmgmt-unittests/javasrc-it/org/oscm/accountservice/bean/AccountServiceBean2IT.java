@@ -8,14 +8,8 @@
 
 package org.oscm.accountservice.bean;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,7 +20,6 @@ import javax.ejb.EJBException;
 
 import org.junit.Test;
 import org.mockito.Matchers;
-
 import org.oscm.accountservice.local.MarketingPermissionServiceLocal;
 import org.oscm.dataservice.bean.DataServiceBean;
 import org.oscm.dataservice.local.DataService;
@@ -36,24 +29,19 @@ import org.oscm.domobjects.enums.LocalizedObjectTypes;
 import org.oscm.i18nservice.bean.ImageResourceServiceBean;
 import org.oscm.i18nservice.bean.LocalizerServiceBean;
 import org.oscm.i18nservice.local.LocalizerServiceLocal;
+import org.oscm.identityservice.bean.IdentityServiceBean;
 import org.oscm.identityservice.bean.LdapAccessStub;
-import org.oscm.subscriptionservice.local.SubscriptionServiceLocal;
-import org.oscm.test.EJBTestBase;
-import org.oscm.test.data.Scenario;
-import org.oscm.test.ejb.TestContainer;
-import org.oscm.test.stubs.ApplicationServiceStub;
-import org.oscm.test.stubs.CommunicationServiceStub;
-import org.oscm.test.stubs.ConfigurationServiceStub;
-import org.oscm.test.stubs.IdentityServiceStub;
-import org.oscm.test.stubs.PaymentServiceStub;
-import org.oscm.test.stubs.SessionServiceStub;
-import org.oscm.test.stubs.TriggerQueueServiceStub;
-import org.oscm.types.enumtypes.EmailType;
 import org.oscm.internal.intf.AccountService;
 import org.oscm.internal.types.exception.ObjectNotFoundException;
 import org.oscm.internal.vo.VOBillingContact;
 import org.oscm.internal.vo.VOOrganization;
 import org.oscm.internal.vo.VOTechnicalService;
+import org.oscm.subscriptionservice.local.SubscriptionServiceLocal;
+import org.oscm.test.EJBTestBase;
+import org.oscm.test.data.Scenario;
+import org.oscm.test.ejb.TestContainer;
+import org.oscm.test.stubs.*;
+import org.oscm.types.enumtypes.EmailType;
 
 public class AccountServiceBean2IT extends EJBTestBase {
 
@@ -85,7 +73,7 @@ public class AccountServiceBean2IT extends EJBTestBase {
         });
         container.addBean(new LdapAccessStub());
         container.addBean(mock(SubscriptionServiceLocal.class));
-        container.addBean(new IdentityServiceStub());
+        container.addBean(mock(IdentityServiceBean.class));
         container.addBean(new PaymentServiceStub());
         container.addBean(new TriggerQueueServiceStub());
         marketingPermissionMock = mock(MarketingPermissionServiceLocal.class);

@@ -8,11 +8,14 @@
 
 package org.oscm.billingservice.business.calculation.revenue.setup;
 
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.*;
 
+import java.lang.UnsupportedOperationException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,6 +23,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.oscm.accountservice.bean.AccountServiceBean;
 import org.oscm.accountservice.bean.MarketingPermissionServiceBean;
 import org.oscm.accountservice.bean.UserLicenseServiceLocalBean;
@@ -39,15 +44,7 @@ import org.oscm.communicationservice.local.CommunicationServiceLocal;
 import org.oscm.configurationservice.local.ConfigurationServiceLocal;
 import org.oscm.dataservice.bean.DataServiceBean;
 import org.oscm.dataservice.local.DataService;
-import org.oscm.domobjects.CatalogEntry;
-import org.oscm.domobjects.ConfigurationSetting;
-import org.oscm.domobjects.Marketplace;
-import org.oscm.domobjects.Organization;
-import org.oscm.domobjects.PlatformUser;
-import org.oscm.domobjects.RoleAssignment;
-import org.oscm.domobjects.Subscription;
-import org.oscm.domobjects.TriggerProcess;
-import org.oscm.domobjects.UserRole;
+import org.oscm.domobjects.*;
 import org.oscm.domobjects.enums.LocalizedObjectTypes;
 import org.oscm.eventservice.bean.EventServiceBean;
 import org.oscm.i18nservice.bean.ImageResourceServiceBean;
@@ -60,33 +57,10 @@ import org.oscm.identityservice.ldap.LdapSettingsManagementServiceBean;
 import org.oscm.identityservice.local.IdentityServiceLocal;
 import org.oscm.internal.accountmgmt.AccountServiceManagement;
 import org.oscm.internal.accountmgmt.AccountServiceManagementBean;
-import org.oscm.internal.intf.AccountService;
-import org.oscm.internal.intf.MarketplaceCacheService;
-import org.oscm.internal.intf.MarketplaceService;
-import org.oscm.internal.intf.OperatorService;
-import org.oscm.internal.intf.ServiceProvisioningService;
-import org.oscm.internal.intf.SubscriptionSearchService;
-import org.oscm.internal.types.enumtypes.ConfigurationKey;
-import org.oscm.internal.types.enumtypes.OrganizationRoleType;
-import org.oscm.internal.types.enumtypes.PaymentInfoType;
-import org.oscm.internal.types.enumtypes.PriceModelType;
-import org.oscm.internal.types.enumtypes.PricingPeriod;
-import org.oscm.internal.types.enumtypes.UserRoleType;
-import org.oscm.internal.types.exception.NonUniqueBusinessKeyException;
-import org.oscm.internal.types.exception.ObjectNotFoundException;
-import org.oscm.internal.types.exception.OperationNotPermittedException;
-import org.oscm.internal.types.exception.OrganizationAuthoritiesException;
-import org.oscm.internal.types.exception.ValidationException;
-import org.oscm.internal.vo.VOCatalogEntry;
-import org.oscm.internal.vo.VOCategory;
-import org.oscm.internal.vo.VOMarketplace;
-import org.oscm.internal.vo.VOOrganization;
-import org.oscm.internal.vo.VOPaymentType;
-import org.oscm.internal.vo.VOPriceModel;
-import org.oscm.internal.vo.VOService;
-import org.oscm.internal.vo.VOServiceDetails;
-import org.oscm.internal.vo.VOTechnicalService;
-import org.oscm.internal.vo.VOUserDetails;
+import org.oscm.internal.intf.*;
+import org.oscm.internal.types.enumtypes.*;
+import org.oscm.internal.types.exception.*;
+import org.oscm.internal.vo.*;
 import org.oscm.marketplace.auditlog.MarketplaceAuditLogCollector;
 import org.oscm.marketplace.bean.LandingpageServiceBean;
 import org.oscm.marketplace.bean.MarketplaceServiceBean;
@@ -99,21 +73,11 @@ import org.oscm.reviewservice.bean.ReviewServiceLocalBean;
 import org.oscm.reviewservice.dao.ProductReviewDao;
 import org.oscm.serviceprovisioningservice.auditlog.PriceModelAuditLogCollector;
 import org.oscm.serviceprovisioningservice.auditlog.ServiceAuditLogCollector;
-import org.oscm.serviceprovisioningservice.bean.BillingAdapterLocalBean;
-import org.oscm.serviceprovisioningservice.bean.SearchServiceBean;
-import org.oscm.serviceprovisioningservice.bean.ServiceProvisioningServiceBean;
-import org.oscm.serviceprovisioningservice.bean.ServiceProvisioningServiceLocalizationBean;
-import org.oscm.serviceprovisioningservice.bean.TagServiceBean;
+import org.oscm.serviceprovisioningservice.bean.*;
 import org.oscm.serviceprovisioningservice.local.ServiceProvisioningPartnerServiceLocal;
 import org.oscm.sessionservice.local.SessionServiceLocal;
 import org.oscm.subscriptionservice.auditlog.SubscriptionAuditLogCollector;
-import org.oscm.subscriptionservice.bean.ManageSubscriptionBean;
-import org.oscm.subscriptionservice.bean.ModifyAndUpgradeSubscriptionBean;
-import org.oscm.subscriptionservice.bean.SubscriptionListServiceBean;
-import org.oscm.subscriptionservice.bean.SubscriptionServiceBean;
-import org.oscm.subscriptionservice.bean.SubscriptionUtilBean;
-import org.oscm.subscriptionservice.bean.TerminateSubscriptionBean;
-import org.oscm.subscriptionservice.bean.ValidateSubscriptionStateBean;
+import org.oscm.subscriptionservice.bean.*;
 import org.oscm.subscriptionservice.local.SubscriptionServiceLocal;
 import org.oscm.taskhandling.local.TaskQueueServiceLocal;
 import org.oscm.techproductoperation.bean.OperationRecordServiceLocalBean;
@@ -125,12 +89,7 @@ import org.oscm.test.data.Organizations;
 import org.oscm.test.data.PlatformUsers;
 import org.oscm.test.data.SupportedCountries;
 import org.oscm.test.ejb.TestContainer;
-import org.oscm.test.stubs.AccountServiceStub;
-import org.oscm.test.stubs.CategorizationServiceStub;
-import org.oscm.test.stubs.ConfigurationServiceStub;
-import org.oscm.test.stubs.IdentityServiceStub;
-import org.oscm.test.stubs.MarketplaceServiceStub;
-import org.oscm.test.stubs.TriggerQueueServiceStub;
+import org.oscm.test.stubs.*;
 import org.oscm.timerservice.bean.TimerServiceBean;
 import org.oscm.triggerservice.local.TriggerMessage;
 import org.oscm.triggerservice.local.TriggerProcessMessageData;
@@ -166,7 +125,7 @@ public class SubscriptionUpgradeSetup {
         container.addBean(new LocalizerServiceBean());
         container.addBean(mock(SessionServiceLocal.class));
         container.addBean(mock(ApplicationServiceLocal.class));
-        addIdentityServiceStub(container);
+        addIdentityService(container);
         addTenantProvisioningServiceStub(container);
         container.addBean(mock(CommunicationServiceLocal.class));
         container.addBean(mock(ImageResourceServiceLocal.class));
@@ -264,29 +223,26 @@ public class SubscriptionUpgradeSetup {
         return localizerMock;
     }
 
-    private static void addIdentityServiceStub(final TestContainer container)
+    private static void addIdentityService(final TestContainer container)
             throws Exception {
-        container.addBean(new IdentityServiceStub() {
+        IdentityServiceBean isMock = mock(IdentityServiceBean.class);
+        doNothing().when(isMock).sendMailToCreatedUser(anyString(), anyBoolean(), any(Marketplace.class), any(PlatformUser.class));
+        given(isMock.getPlatformUser(anyString(), anyBoolean())).willAnswer(new Answer<PlatformUser>() {
             @Override
-            public void sendMailToCreatedUser(String password,
-                    boolean userLocalLdap, Marketplace marketplace,
-                    PlatformUser pu) {
-            }
-
-            @Override
-            public PlatformUser getPlatformUser(String userId,
-                    boolean validateOrganization) {
-                PlatformUser user = null;
+            public PlatformUser answer(InvocationOnMock invocation) throws Throwable {
+                PlatformUser user;
                 try {
-                    user = container.get(IdentityServiceLocal.class)
-                            .getPlatformUser(userId, false);
-                } catch (ObjectNotFoundException
-                        | OperationNotPermittedException exception) {
+                    user = container.get(IdentityServiceLocal.class).getPlatformUser((String) invocation.getArguments()[0], false);
+                } catch (ObjectNotFoundException e) {
+                    throw new UnsupportedOperationException();
+                } catch (OperationNotPermittedException e) {
                     throw new UnsupportedOperationException();
                 }
                 return user;
             }
         });
+        container.addBean(isMock);
+
     }
 
     private static void addConfigurationServiceStub(

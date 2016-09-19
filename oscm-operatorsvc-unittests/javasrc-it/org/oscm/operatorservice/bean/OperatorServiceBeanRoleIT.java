@@ -6,47 +6,30 @@ package org.oscm.operatorservice.bean;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 import javax.persistence.Query;
 
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.oscm.accountservice.bean.AccountServiceBean;
 import org.oscm.accountservice.local.AccountServiceLocal;
 import org.oscm.accountservice.local.MarketingPermissionServiceLocal;
 import org.oscm.auditlog.bean.AuditLogServiceBean;
-import org.oscm.domobjects.BillingResult;
-import org.oscm.domobjects.ConfigurationSetting;
-import org.oscm.domobjects.DomainObject;
-import org.oscm.domobjects.ImageResource;
-import org.oscm.domobjects.Marketplace;
-import org.oscm.domobjects.Organization;
-import org.oscm.domobjects.OrganizationRefToPaymentType;
-import org.oscm.domobjects.OrganizationReference;
-import org.oscm.domobjects.OrganizationRole;
-import org.oscm.domobjects.OrganizationToRole;
-import org.oscm.domobjects.PaymentType;
-import org.oscm.domobjects.PlatformUser;
-import org.oscm.domobjects.SupportedCountry;
-import org.oscm.domobjects.SupportedCurrency;
-import org.oscm.domobjects.TriggerDefinition;
+import org.oscm.domobjects.*;
 import org.oscm.domobjects.enums.LocalizedObjectTypes;
 import org.oscm.i18nservice.bean.LocalizerFacade;
 import org.oscm.i18nservice.local.LocalizerServiceLocal;
+import org.oscm.identityservice.local.IdentityServiceLocal;
 import org.oscm.identityservice.local.LdapSettingsManagementServiceLocal;
 import org.oscm.internal.intf.AccountService;
 import org.oscm.internal.intf.MarketplaceService;
@@ -54,32 +37,16 @@ import org.oscm.internal.intf.OperatorService;
 import org.oscm.internal.types.enumtypes.ImageType;
 import org.oscm.internal.types.enumtypes.OrganizationRoleType;
 import org.oscm.internal.types.enumtypes.UserAccountStatus;
-import org.oscm.internal.types.exception.DomainObjectException.ClassEnum;
 import org.oscm.internal.types.exception.IncompatibleRolesException;
 import org.oscm.internal.types.exception.NonUniqueBusinessKeyException;
 import org.oscm.internal.types.exception.ObjectNotFoundException;
-import org.oscm.internal.vo.VOLocalizedText;
-import org.oscm.internal.vo.VOOperatorOrganization;
-import org.oscm.internal.vo.VOOrganization;
-import org.oscm.internal.vo.VOTimerInfo;
-import org.oscm.internal.vo.VOUserDetails;
+import org.oscm.internal.types.exception.DomainObjectException.ClassEnum;
+import org.oscm.internal.vo.*;
 import org.oscm.marketplace.assembler.MarketplaceAssembler;
 import org.oscm.subscriptionservice.local.SubscriptionServiceLocal;
 import org.oscm.test.EJBTestBase;
 import org.oscm.test.ejb.TestContainer;
-import org.oscm.test.stubs.ApplicationServiceStub;
-import org.oscm.test.stubs.BillingServiceStub;
-import org.oscm.test.stubs.CommunicationServiceStub;
-import org.oscm.test.stubs.ConfigurationServiceStub;
-import org.oscm.test.stubs.DataServiceStub;
-import org.oscm.test.stubs.IdentityServiceStub;
-import org.oscm.test.stubs.ImageResourceServiceStub;
-import org.oscm.test.stubs.LdapAccessServiceStub;
-import org.oscm.test.stubs.LocalizerServiceStub;
-import org.oscm.test.stubs.PaymentServiceStub;
-import org.oscm.test.stubs.QueryStub;
-import org.oscm.test.stubs.SearchServiceStub;
-import org.oscm.test.stubs.TriggerQueueServiceStub;
+import org.oscm.test.stubs.*;
 import org.oscm.timerservice.bean.TimerServiceBean;
 
 public class OperatorServiceBeanRoleIT extends EJBTestBase {
@@ -285,27 +252,31 @@ public class OperatorServiceBeanRoleIT extends EJBTestBase {
 
         });
 
-        container.addBean(new IdentityServiceStub() {
+        IdentityServiceLocal mock = mock(IdentityServiceLocal.class);
+        container.addBean(mock);
+        doAnswer(new Answer<Void>() {
             @Override
-            public void setUserAccountStatus(PlatformUser user,
-                    UserAccountStatus newStatus) {
+            public Void answer(InvocationOnMock invocation) throws Throwable {
                 userStatusChanged = true;
+                return null;
             }
+        }).when(mock).setUserAccountStatus(any(PlatformUser.class), any(UserAccountStatus.class));
 
+        doAnswer(new Answer<Void>() {
             @Override
-            public void resetPasswordForUser(PlatformUser user,
-                    Marketplace marketplace) {
+            public Void answer(InvocationOnMock invocation) throws Throwable {
                 passwordReset = true;
+                return null;
             }
+        }).when(mock).resetPasswordForUser(any(PlatformUser.class), any(Marketplace.class));
 
+        doAnswer(new Answer<Void>() {
             @Override
-            public void createOrganizationAdmin(VOUserDetails userDetails,
-                    Organization organization, String password,
-                    Long serviceKey, Marketplace marketplace) {
-                identityService_createdOrgAdmin = userDetails;
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                identityService_createdOrgAdmin = (VOUserDetails) invocation.getArguments()[0];
+                return null;
             }
-
-        });
+        }).when(mock).createOrganizationAdmin(any(VOUserDetails.class), any(Organization.class), anyString(), anyLong(), any(Marketplace.class));
 
         container.addBean(new PaymentServiceStub() {
             @Override

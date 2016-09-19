@@ -8,6 +8,9 @@
 
 package org.oscm.triggerservice.bean;
 
+import static org.mockito.Mockito.mock;
+
+import java.lang.UnsupportedOperationException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -20,7 +23,6 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 import org.oscm.dataservice.bean.DataServiceBean;
 import org.oscm.dataservice.local.DataService;
 import org.oscm.domobjects.Organization;
@@ -30,6 +32,11 @@ import org.oscm.domobjects.TriggerProcess;
 import org.oscm.i18nservice.bean.LocalizerFacade;
 import org.oscm.i18nservice.bean.LocalizerServiceBean;
 import org.oscm.i18nservice.local.LocalizerServiceLocal;
+import org.oscm.internal.intf.TriggerService;
+import org.oscm.internal.types.enumtypes.*;
+import org.oscm.internal.types.exception.*;
+import org.oscm.internal.vo.*;
+import org.oscm.intf.IdentityService;
 import org.oscm.subscriptionservice.local.SubscriptionServiceLocal;
 import org.oscm.test.BaseAdmUmTest;
 import org.oscm.test.EJBTestBase;
@@ -37,29 +44,11 @@ import org.oscm.test.data.Organizations;
 import org.oscm.test.ejb.TestContainer;
 import org.oscm.test.stubs.AccountServiceStub;
 import org.oscm.test.stubs.CommunicationServiceStub;
-import org.oscm.test.stubs.IdentityServiceStub;
 import org.oscm.test.stubs.ServiceProvisioningServiceStub;
 import org.oscm.test.stubs.TriggerQueueServiceStub;
 import org.oscm.triggerservice.assembler.TriggerProcessAssembler;
 import org.oscm.triggerservice.local.TriggerServiceLocal;
-import org.oscm.internal.intf.TriggerService;
-import org.oscm.internal.types.enumtypes.ParameterValueType;
-import org.oscm.internal.types.enumtypes.TriggerProcessParameterType;
-import org.oscm.internal.types.enumtypes.TriggerProcessStatus;
-import org.oscm.internal.types.enumtypes.TriggerTargetType;
-import org.oscm.internal.types.enumtypes.TriggerType;
-import org.oscm.internal.types.exception.ObjectNotFoundException;
-import org.oscm.internal.types.exception.OperationNotPermittedException;
-import org.oscm.internal.types.exception.SaaSApplicationException;
-import org.oscm.internal.types.exception.SaaSSystemException;
-import org.oscm.internal.types.exception.TriggerProcessStatusException;
-import org.oscm.internal.types.exception.ValidationException;
-import org.oscm.internal.vo.VOLocalizedText;
-import org.oscm.internal.vo.VOParameter;
-import org.oscm.internal.vo.VOService;
-import org.oscm.internal.vo.VOSubscriptionDetails;
-import org.oscm.internal.vo.VOTriggerProcess;
-import org.oscm.internal.vo.VOTriggerProcessParameter;
+
 import com.google.common.collect.Lists;
 
 public class TriggerServiceBeanIT extends EJBTestBase {
@@ -99,8 +88,8 @@ public class TriggerServiceBeanIT extends EJBTestBase {
         container.addBean(new AccountServiceStub());
         container.addBean(new TriggerQueueServiceStub());
         container.addBean(new ServiceProvisioningServiceStub());
-        SubscriptionServiceLocal subServiceMock = Mockito
-                .mock(SubscriptionServiceLocal.class);
+        SubscriptionServiceLocal subServiceMock =
+                mock(SubscriptionServiceLocal.class);
 
         Mockito.doAnswer(new Answer<Void>() {
             @Override
@@ -137,7 +126,7 @@ public class TriggerServiceBeanIT extends EJBTestBase {
 
         container.addBean(new DataServiceBean());
         container.addBean(new LocalizerServiceBean());
-        container.addBean(new IdentityServiceStub());
+        container.addBean(mock(IdentityService.class));
         container.addBean(new TriggerServiceBean());
 
         mgr = container.get(DataService.class);

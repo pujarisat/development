@@ -18,26 +18,19 @@ import static org.mockito.Mockito.mock;
 import java.util.concurrent.Callable;
 
 import org.junit.Test;
-
 import org.oscm.accountservice.local.MarketingPermissionServiceLocal;
 import org.oscm.dataservice.bean.DataServiceBean;
 import org.oscm.dataservice.local.DataService;
 import org.oscm.domobjects.Organization;
 import org.oscm.i18nservice.bean.ImageResourceServiceBean;
+import org.oscm.internal.intf.IdentityService;
+import org.oscm.internal.types.enumtypes.OrganizationRoleType;
+import org.oscm.internal.types.exception.SaaSSystemException;
 import org.oscm.subscriptionservice.local.SubscriptionServiceLocal;
 import org.oscm.test.EJBTestBase;
 import org.oscm.test.data.Organizations;
 import org.oscm.test.ejb.TestContainer;
-import org.oscm.test.stubs.ApplicationServiceStub;
-import org.oscm.test.stubs.CommunicationServiceStub;
-import org.oscm.test.stubs.ConfigurationServiceStub;
-import org.oscm.test.stubs.IdentityServiceStub;
-import org.oscm.test.stubs.LdapAccessServiceStub;
-import org.oscm.test.stubs.LocalizerServiceStub;
-import org.oscm.test.stubs.PaymentServiceStub;
-import org.oscm.test.stubs.TriggerQueueServiceStub;
-import org.oscm.internal.types.enumtypes.OrganizationRoleType;
-import org.oscm.internal.types.exception.SaaSSystemException;
+import org.oscm.test.stubs.*;
 
 /**
  * Tests the non-service-interface methods of the account service bean. Hence
@@ -65,7 +58,7 @@ public class AccountServiceBean3IT extends EJBTestBase {
         container.addBean(new LdapAccessServiceStub());
         container.addBean(new CommunicationServiceStub());
         container.addBean(mock(SubscriptionServiceLocal.class));
-        container.addBean(new IdentityServiceStub());
+        container.addBean(mock(IdentityService.class));
         container.addBean(mock(MarketingPermissionServiceLocal.class));
         container.addBean(new AccountServiceBean());
         dataService = container.get(DataService.class);

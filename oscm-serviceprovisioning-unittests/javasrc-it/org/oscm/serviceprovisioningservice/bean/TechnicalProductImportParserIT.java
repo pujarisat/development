@@ -4,27 +4,16 @@
 
 package org.oscm.serviceprovisioningservice.bean;
 
-import static org.oscm.test.Numbers.L_TIMESTAMP;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
+import static org.oscm.test.Numbers.L_TIMESTAMP;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 import javax.ejb.EJBAccessException;
@@ -32,84 +21,31 @@ import javax.ejb.EJBException;
 
 import org.junit.Test;
 import org.mockito.Mockito;
-
 import org.oscm.accountservice.local.MarketingPermissionServiceLocal;
 import org.oscm.configurationservice.local.ConfigurationServiceLocal;
 import org.oscm.dataservice.bean.DataServiceBean;
 import org.oscm.dataservice.local.DataService;
-import org.oscm.domobjects.ImageResource;
-import org.oscm.domobjects.MarketingPermission;
-import org.oscm.domobjects.OperationParameter;
-import org.oscm.domobjects.Organization;
-import org.oscm.domobjects.OrganizationReference;
-import org.oscm.domobjects.PaymentInfo;
-import org.oscm.domobjects.PlatformUser;
-import org.oscm.domobjects.Product;
-import org.oscm.domobjects.RoleDefinition;
-import org.oscm.domobjects.Subscription;
-import org.oscm.domobjects.TechnicalProduct;
-import org.oscm.domobjects.TechnicalProductOperation;
-import org.oscm.domobjects.TechnicalProductTag;
+import org.oscm.domobjects.*;
 import org.oscm.domobjects.enums.BillingAdapterIdentifier;
 import org.oscm.domobjects.enums.LocalizedObjectTypes;
 import org.oscm.domobjects.enums.OrganizationReferenceType;
 import org.oscm.i18nservice.bean.LocalizerServiceBean;
 import org.oscm.i18nservice.local.LocalizerServiceLocal;
+import org.oscm.internal.intf.IdentityService;
+import org.oscm.internal.intf.ServiceProvisioningService;
+import org.oscm.internal.types.enumtypes.*;
+import org.oscm.internal.types.exception.*;
+import org.oscm.internal.vo.*;
 import org.oscm.serviceprovisioningservice.local.TagServiceLocal;
 import org.oscm.sessionservice.local.SessionServiceLocal;
 import org.oscm.subscriptionservice.local.SubscriptionServiceLocal;
 import org.oscm.tenantprovisioningservice.bean.TenantProvisioningServiceBean;
 import org.oscm.test.EJBTestBase;
-import org.oscm.test.data.BillingAdapters;
-import org.oscm.test.data.Organizations;
-import org.oscm.test.data.Products;
-import org.oscm.test.data.Subscriptions;
-import org.oscm.test.data.SupportedCountries;
-import org.oscm.test.data.TSXML;
+import org.oscm.test.data.*;
 import org.oscm.test.ejb.TestContainer;
-import org.oscm.test.stubs.ApplicationServiceStub;
-import org.oscm.test.stubs.CommunicationServiceStub;
-import org.oscm.test.stubs.ConfigurationServiceStub;
-import org.oscm.test.stubs.IdentityServiceStub;
-import org.oscm.test.stubs.ImageResourceServiceStub;
-import org.oscm.test.stubs.LdapAccessServiceStub;
-import org.oscm.test.stubs.MarketplaceServiceStub;
-import org.oscm.test.stubs.PaymentServiceStub;
-import org.oscm.test.stubs.SessionServiceStub;
-import org.oscm.test.stubs.TriggerQueueServiceStub;
+import org.oscm.test.stubs.*;
 import org.oscm.types.enumtypes.OperationParameterType;
 import org.oscm.types.enumtypes.ProvisioningType;
-import org.oscm.internal.intf.ServiceProvisioningService;
-import org.oscm.internal.types.enumtypes.ImageType;
-import org.oscm.internal.types.enumtypes.OrganizationRoleType;
-import org.oscm.internal.types.enumtypes.ParameterType;
-import org.oscm.internal.types.enumtypes.ParameterValueType;
-import org.oscm.internal.types.enumtypes.PriceModelType;
-import org.oscm.internal.types.enumtypes.PricingPeriod;
-import org.oscm.internal.types.enumtypes.ServiceAccessType;
-import org.oscm.internal.types.enumtypes.SubscriptionStatus;
-import org.oscm.internal.types.exception.BillingAdapterNotFoundException;
-import org.oscm.internal.types.exception.DomainObjectException;
-import org.oscm.internal.types.exception.ImportException;
-import org.oscm.internal.types.exception.NonUniqueBusinessKeyException;
-import org.oscm.internal.types.exception.ObjectNotFoundException;
-import org.oscm.internal.types.exception.SaaSSystemException;
-import org.oscm.internal.types.exception.TechnicalServiceActiveException;
-import org.oscm.internal.types.exception.TechnicalServiceMultiSubscriptions;
-import org.oscm.internal.types.exception.UnchangeableAllowingOnBehalfActingException;
-import org.oscm.internal.types.exception.UpdateConstraintException;
-import org.oscm.internal.vo.VOEventDefinition;
-import org.oscm.internal.vo.VOParameter;
-import org.oscm.internal.vo.VOParameterDefinition;
-import org.oscm.internal.vo.VOParameterOption;
-import org.oscm.internal.vo.VOPriceModel;
-import org.oscm.internal.vo.VOPricedEvent;
-import org.oscm.internal.vo.VOPricedParameter;
-import org.oscm.internal.vo.VORoleDefinition;
-import org.oscm.internal.vo.VOService;
-import org.oscm.internal.vo.VOServiceDetails;
-import org.oscm.internal.vo.VOTechnicalService;
-import org.oscm.internal.vo.VOTechnicalServiceOperation;
 
 @SuppressWarnings("boxing")
 public class TechnicalProductImportParserIT extends EJBTestBase {
@@ -138,7 +74,7 @@ public class TechnicalProductImportParserIT extends EJBTestBase {
         container.addBean(mpsMock);
         container.addBean(new ConfigurationServiceStub());
         container.addBean(new LocalizerServiceBean());
-        container.addBean(new IdentityServiceStub());
+        container.addBean(mock(IdentityService.class));
         container.addBean(new SessionServiceStub() {
             @Override
             public boolean hasTechnicalProductActiveSessions(
