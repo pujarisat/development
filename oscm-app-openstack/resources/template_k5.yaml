@@ -3,48 +3,53 @@ heat_template_version: 2013-05-23
 description: This is a Heat Orchestration template used for the creation and provisioning of a stack in FUJITSU Enterprise Cloud Service K5.
 
 parameters:
-  ImageId:
-    description: The id of the image to provision.
-    type: string
-    default: <please input your image id>
-  flavor:
-    type: string
-    description: flavor
-    default: P-1
-  KeyName:
-    description: The name of an already defined key pair in OpenStack, used for enabling SSH access to the web server.
-    type: string
-    default: <please input your keypair name>
   az:
     type: string
     description: availability zone
-    default: jp-west-1a
+    default: uk-1a
+  KeyName:
+    type: string
+    description: Name of an existing key pair to use for the server
+    default: SKKey
+  flavor:
+    type: string
+    description: Flavor for the server to be created
+    default: S-1
+  ImageId:
+    type: string
+    description: Image ID or image name to use for the server
+    default: 58fd966f-b055-4cd0-9012-cf6af7a4c32b
+  PrivateNetworkId:
+    type: string
+    description: network uuid
+    default: 2d608af9-6917-4986-8465-24ad4797808d
   VmName:
     type: string
     description: name of vm
+    default: fcip
   AdminPassword:
     type: string
-  PrivateNetworkId:
-    type: string
-    description: internal network uuid
-    default: <please input your internal network uuid>
+    default: j09udf09fFDS0wWdzz9
   SubnetId:
     type: string
     description: subnet on which the load balancer will be located
+    default: fe5ff622-d44c-483f-867a-6355fdf5b7db
   PublicNetworkId:
     type: string
     description: UUID of a Neutron external network
+    default: 0a23d6f7-2f94-4cf3-aebb-587b29ac9538
   SecurityGroupName:
     type: string
     description: security group
-    
+ 
+ # Create a new VM
 resources:
   sys-vol:
     type: OS::Cinder::Volume
     properties:
       name: "sys-vol"
       size: 80
-      availability_zone: { get_param: az }
+      availability_zone:  { get_param: az }
       volume_type: "M1"
       image : { get_param: ImageId }
   server:
@@ -54,25 +59,37 @@ resources:
       image: { get_param: ImageId }
       flavor: { get_param: flavor }
       networks:
-        - port: { get_resource: instanceport }
+        - port: { get_resource: server1_port }
       name: { get_param: VmName }
-      metadata: {"admin_pass": { get_param: AdminPassword }}
+      metadata: {"admin_pass": "j09udf09fFDS0wWdzz9"}
       availability_zone: { get_param: az }
-      block_device_mapping: [{"device_name": "/dev/vda","volume_size": "100", "delete_on_termination": True, "volume_id": {get_resource: sys-vol}}]
-  instanceport:
+      block_device_mapping: [{"device_name": "/dev/vda","volume_size": "100", "volume_id": {get_resource: sys-vol}}]
+      
+ # Create a new public IP 
+  server1_port:
     type: OS::Neutron::Port
     properties:
+      availability_zone: { get_param: az }
       network_id: { get_param: PrivateNetworkId }
       security_groups: { get_param: SecurityGroupName }
       fixed_ips:
         - subnet_id: { get_param: SubnetId }
-  instancepublic:
+     
+  server1_floating_ip:
     type: OS::Neutron::FloatingIP
+    depends_on: [server1_port]
     properties:
+      availability_zone: { get_param: az }
       floating_network_id: { get_param: PublicNetworkId }
-      port_id: { get_resource: instanceport }
+      
+  server1_floating_ip_association:
+    type: OS::Neutron::FloatingIPAssociation
+    depends_on: server1_floating_ip
+    properties:
+      floatingip_id: { get_resource: server1_floating_ip }
+      port_id: { get_resource: server1_port }
+      
 outputs:
   KP_Out:
     description: Key pair name
     value: { get_attr: [server, networks] }
- 
