@@ -61,7 +61,7 @@ resources:
       networks:
         - port: { get_resource: server1_port }
       name: { get_param: VmName }
-      metadata: {"admin_pass": "j09udf09fFDS0wWdzz9"}
+      metadata: {"admin_pass": { get_param: AdminPassword }}
       availability_zone: { get_param: az }
       block_device_mapping: [{"device_name": "/dev/vda","volume_size": "100", "volume_id": {get_resource: sys-vol}}]
       
