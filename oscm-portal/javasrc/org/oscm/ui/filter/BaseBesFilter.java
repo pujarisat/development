@@ -8,8 +8,6 @@
 
 package org.oscm.ui.filter;
 
-import static org.oscm.ui.common.Constants.REQ_PARAM_TENANT_ID;
-
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -21,16 +19,15 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.xml.datatype.DatatypeConfigurationException;
 
-import org.apache.commons.lang3.StringUtils;
 import org.oscm.internal.intf.*;
 import org.oscm.internal.types.enumtypes.ConfigurationKey;
 import org.oscm.internal.types.enumtypes.OrganizationRoleType;
 import org.oscm.internal.types.enumtypes.PerformanceHint;
 import org.oscm.internal.types.enumtypes.UserRoleType;
 import org.oscm.internal.types.exception.NotExistentTenantException;
-import org.oscm.internal.types.exception.ObjectNotFoundException;
 import org.oscm.internal.types.exception.OrganizationAuthoritiesException;
 import org.oscm.internal.types.exception.SAML2AuthnRequestException;
+import org.oscm.internal.types.exception.WrongTenantConfigurationException;
 import org.oscm.internal.vo.VOUserDetails;
 import org.oscm.logging.Log4jLogger;
 import org.oscm.logging.LoggerFactory;
@@ -143,6 +140,9 @@ public abstract class BaseBesFilter implements Filter {
             authSettings.init(null);
         } catch (NotExistentTenantException e) {
             //ait gonna happen. Configsettins will be used.
+        } catch (WrongTenantConfigurationException e) {
+            logger.logError(Log4jLogger.SYSTEM_LOG, e,
+                    LogMessageIdentifier.ERROR_TENANT_MISCONFIGURED);
         }
     }
 
@@ -329,6 +329,7 @@ public abstract class BaseBesFilter implements Filter {
                 defaultUrl = MenuBean.LINK_TECHSERVICE_IMPORT;
             } else if (!roles.contains(UserRoleType.MARKETPLACE_OWNER)
                     && !roles.contains(UserRoleType.BROKER_MANAGER)
+                    && !roles.contains(UserRoleType.ORGANIZATION_ADMIN)
                     && !roles.contains(UserRoleType.RESELLER_MANAGER)
                     || (userDetails.getOrganizationRoles().size() == 1 && userDetails
                             .getOrganizationRoles().contains(
@@ -549,19 +550,17 @@ public abstract class BaseBesFilter implements Filter {
     /**
      * redirectToMp Url
      */
-    protected boolean redirectToMpUrl(ServiceAccess serviceAccess,
-            HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+    protected boolean redirectToMpUrl(HttpServletRequest httpRequest, HttpServletResponse httpResponse)
             throws IOException {
         String uri = httpRequest.getRequestURI();
-        ConfigurationService cs = serviceAccess
-                .getService(ConfigurationService.class);
+        ConfigurationService cs = getConfigurationService(httpRequest);
         if (httpRequest.getRequestURL() == null)
             return false;
         String requestUrl = httpRequest.getRequestURL().toString();
         String queryString = httpRequest.getQueryString() == null ? ""
                 : httpRequest.getQueryString();
 
-        String mpRedirect = "";
+        String mpRedirect;
         if (ADMValidator.isHttpsScheme(requestUrl)) {
             mpRedirect = getRedirectMpUrlHttps(cs);
         } else {

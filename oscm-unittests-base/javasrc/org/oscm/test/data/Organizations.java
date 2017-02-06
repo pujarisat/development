@@ -75,7 +75,8 @@ public class Organizations {
             throws NonUniqueBusinessKeyException {
         PlatformUser admin = prepareUser(mgr, org, isAdmin, userId, locale);
         admin.setUserId(userId);
-        mgr.persistPlatformUserWithTenant(admin, tenantID);
+        admin.setTenantId(tenantID);
+        mgr.persist(admin);
         if (isAdmin) {
             PlatformUsers.grantAdminRole(mgr, admin);
         }
@@ -200,6 +201,40 @@ public class Organizations {
             OrganizationRoleType... roles)
             throws NonUniqueBusinessKeyException, ObjectNotFoundException {
         return createOrganization(mgr, String.valueOf(organizationId++), roles);
+    }
+
+    public static Organization createOrganization(DataService mgr, Organization org,
+            OrganizationRoleType... roles) throws NonUniqueBusinessKeyException, ObjectNotFoundException {
+        if (Arrays.asList(roles).contains(OrganizationRoleType.SUPPLIER)) {
+            createOperatorRevenueShare(mgr, org, BigDecimal.ZERO);
+        }
+
+        mgr.persist(org);
+
+        if (roles != null) {
+            createRoles(mgr, org, roles);
+        }
+        // assign CUSTOMER role for any organization if is not assigned
+        if (!org.hasRole(OrganizationRoleType.CUSTOMER)) {
+            createRole(mgr, org, OrganizationRoleType.CUSTOMER);
+        }
+        if (org.hasRole(OrganizationRoleType.CUSTOMER)) {
+            SupportedCountries.createOneSupportedCountry(mgr);
+            setDomicileCountry(org, "DE", mgr);
+        }
+        if (org.hasRole(OrganizationRoleType.SUPPLIER)) {
+            addSupplierToCustomer(mgr, org, org);
+            if (org.hasRole(OrganizationRoleType.TECHNOLOGY_PROVIDER)) {
+                addSupplierToCustomer(mgr, org, org);
+                supportAllCountries(mgr, org);
+            }
+        }
+        if (org.hasRole(OrganizationRoleType.BROKER)
+                || org.hasRole(OrganizationRoleType.RESELLER)) {
+            SupportedCountries.createOneSupportedCountry(mgr);
+            setDomicileCountry(org, "DE", mgr);
+        }
+        return org;
     }
 
     public static Organization createOrganization(DataService mgr,

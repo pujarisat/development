@@ -142,9 +142,24 @@
       </a4j:outputPanel>
     </rich:tab>
     <rich:tab id="customTab" header="#{subscription.customTabName}" rendered="#{not empty subscription.customTabName}">
-      <iframe id="customData" src="#{subscription.customTabUrl}" width="100%" height="500"
-              style="border: none" />
+      <h:panelGroup id="loading">#{msg['info.loadingCustomTab']}
+        <h:panelGroup id="wait" />
+          <script type="text/javascript">
+            var dots = window.setInterval( function() {
+                var wait = document.getElementById("wait");
+                if ( wait.innerHTML.length > 2 ) {
+                    wait.innerHTML = "";
+                }
+                else {
+                    wait.innerHTML += ".";
+                }
+                }, 350);
+          </script>
+      </h:panelGroup>
+      <iframe id="customData" src="#{mySubscriptionsCtrl.customTabUrlWithParameters}" width="100%" height="500"
+              style="border: none" onload="$('#loading').hide();clearInterval(dots);"/>
     </rich:tab>
+
   </rich:tabPanel>
   </a4j:outputPanel>
 

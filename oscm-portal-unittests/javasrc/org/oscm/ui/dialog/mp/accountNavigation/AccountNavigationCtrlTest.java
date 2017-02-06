@@ -11,6 +11,7 @@ package org.oscm.ui.dialog.mp.accountNavigation;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -21,16 +22,13 @@ import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import org.oscm.internal.vo.VOUser;
-import org.oscm.internal.vo.VOUserDetails;
-import org.oscm.ui.beans.ApplicationBean;
-import org.oscm.domobjects.ConfigurationSetting;
 import org.oscm.internal.intf.ConfigurationService;
 import org.oscm.internal.types.constants.HiddenUIConstants;
 import org.oscm.internal.types.enumtypes.ConfigurationKey;
 import org.oscm.internal.vo.VOConfigurationSetting;
+import org.oscm.internal.vo.VOUserDetails;
 import org.oscm.types.constants.Configuration;
+import org.oscm.ui.beans.ApplicationBean;
 import org.oscm.ui.beans.UserBean;
 
 /**
@@ -43,6 +41,10 @@ public class AccountNavigationCtrlTest {
     private ApplicationBean abMock;
     private ConfigurationService cnfgSrv;
     private UserBean userMock;
+
+    private final String CURRENT_URL = "https://estgoebel:8180/oscm-portal/marketplace/index?mId=\"e1d423ce\"";
+
+    @SuppressWarnings({ "serial" })
     @Before
     public void setup() throws Exception {
         abMock = mock(ApplicationBean.class);
@@ -53,6 +55,7 @@ public class AccountNavigationCtrlTest {
                 .thenReturn(Boolean.TRUE);
         when(abMock.getServerBaseUrl()).thenReturn("baseURL");
         ctrl = new AccountNavigationCtrl() {
+
             @Override
             protected ConfigurationService getConfigurationService() {
                 return cnfgSrv;
@@ -71,7 +74,7 @@ public class AccountNavigationCtrlTest {
                         ConfigurationKey.HIDE_PAYMENT_INFORMATION,
                         Configuration.GLOBAL_CONTEXT);
         ctrl.setApplicationBean(abMock);
-        AccountNavigationModel model = new AccountNavigationModel(){
+        AccountNavigationModel model = new AccountNavigationModel() {
             @Override
             public UserBean getUserBean() {
                 return userMock;
@@ -91,16 +94,36 @@ public class AccountNavigationCtrlTest {
         assertEquals(9, model.getHiddenElement().size());
         assertEquals(10, model.getLink().size());
         assertEquals(10, model.getTitle().size());
-        assertTrue(model.getLink().get(0).endsWith("account/index.jsf"));
+        assertTrue(model.getLink().get(0),
+                model.getLink().get(0).endsWith("index.jsf"));
         assertEquals(AccountNavigationModel.MARKETPLACE_ACCOUNT_TITLE,
                 model.getTitle().get(0));
     }
 
     @Test
+    public void computeBaseUrl() {
+        // when
+        ctrl.computeBaseUrl(
+                "https://estgoebel:8180/oscm-portal/marketplace/index?mId=\"ed123ge\"");
+        AccountNavigationModel model = ctrl.getModel();
+        assertEquals("https://estgoebel:8180/oscm-portal", model.getBaseUrl());
+
+    }
+
+    @Test
     public void getLink() {
+        AccountNavigationModel model = ctrl.getModel();
+        ctrl.computeBaseUrl(CURRENT_URL);
+
+        assertEquals("https://estgoebel:8180/oscm-portal", model.getBaseUrl());
+
         List<String> result = ctrl.getLink();
         assertEquals(10, result.size());
-        assertTrue(result.get(0).endsWith("account/index.jsf"));
+
+        assertEquals(result.get(0),
+                "https://estgoebel:8180/oscm-portal/marketplace/account/index.jsf");
+        assertEquals(result.get(1),
+                "https://estgoebel:8180/oscm-portal/marketplace/account/profile.jsf");
     }
 
     @Test
@@ -180,10 +203,33 @@ public class AccountNavigationCtrlTest {
     }
 
     @Test
+    public void isLinkVisible_loggedInAndAdmin_Hidden_Users() {
+        doReturn(Boolean.TRUE).when(abMock).isUIElementHidden(anyString());
+        doReturn(Boolean.TRUE).when(ctrl).isLoggedInAndAdmin();
+        doReturn(Boolean.TRUE).when(ctrl).isAdministrationAccess();
+
+        ctrl.getModel();
+        boolean result = ctrl.isLinkVisible(4);
+        assertEquals(Boolean.FALSE, Boolean.valueOf(result));
+    }
+
+    @Test
+    public void isLinkVisible_loggedInAndAdmin_Hidden_Administration() {
+        doReturn(Boolean.TRUE).when(abMock).isUIElementHidden(anyString());
+        doReturn(Boolean.TRUE).when(ctrl).isLoggedInAndAdmin();
+        doReturn(Boolean.TRUE).when(ctrl).isAdministrationAccess();
+
+        ctrl.getModel();
+        boolean result = ctrl.isLinkVisible(9);
+        assertEquals(Boolean.FALSE, Boolean.valueOf(result));
+    }
+
+    @Test
     public void isLinkHidden_OrgUnits() {
         doReturn(Boolean.FALSE).when(ctrl).isLoggedInAndAdmin();
         doReturn(Boolean.TRUE).when(ctrl).isLoggedInAndSubscriptionManager();
         doReturn(Boolean.FALSE).when(ctrl).isLoggedInAndUnitAdmin();
+
         ctrl.getModel();
         boolean result = ctrl.isLinkVisible(5);
         assertEquals(Boolean.FALSE, Boolean.valueOf(result));
@@ -214,7 +260,7 @@ public class AccountNavigationCtrlTest {
         doReturn(setting).when(cnfgSrv).getVOConfigurationSetting(
                 ConfigurationKey.HIDE_PAYMENT_INFORMATION,
                 Configuration.GLOBAL_CONTEXT);
-        
+
         // when
         boolean isPaymentAvailable = ctrl.isPaymentAvailable();
 

@@ -13,28 +13,33 @@ package org.oscm.app.aws.controller;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import org.oscm.app.aws.EC2Communication;
 import org.oscm.app.aws.data.FlowState;
 import org.oscm.app.aws.data.Operation;
+import org.oscm.app.aws.data.Server;
 import org.oscm.app.aws.i18n.Messages;
-import org.oscm.app.v1_0.APPlatformServiceFactory;
-import org.oscm.app.v1_0.data.InstanceStatus;
-import org.oscm.app.v1_0.data.LocalizedText;
-import org.oscm.app.v1_0.data.User;
-import org.oscm.app.v1_0.exceptions.APPlatformException;
-import org.oscm.app.v1_0.exceptions.AbortException;
-import org.oscm.app.v1_0.exceptions.InstanceNotAliveException;
-import org.oscm.app.v1_0.exceptions.SuspendException;
-import org.oscm.app.v1_0.intf.APPlatformService;
+import org.oscm.app.v2_0.APPlatformServiceFactory;
+import org.oscm.app.v2_0.data.InstanceStatus;
+import org.oscm.app.v2_0.data.LocalizedText;
+import org.oscm.app.v2_0.data.User;
+import org.oscm.app.v2_0.exceptions.APPlatformException;
+import org.oscm.app.v2_0.exceptions.AbortException;
+import org.oscm.app.v2_0.exceptions.InstanceNotAliveException;
+import org.oscm.app.v2_0.exceptions.SuspendException;
+import org.oscm.app.v2_0.intf.APPlatformService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.ec2.model.Image;
+import com.amazonaws.services.ec2.model.Instance;
+import com.amazonaws.services.ec2.model.Tag;
 
 /**
  * Dispatcher for triggering the next step in a provisioning operation depending
@@ -172,6 +177,12 @@ public class EC2Processor {
         return result;
     }
 
+    public List<Server> getServerDetails() {
+        EC2Communication ec2comm = new EC2Communication(ph);
+        List<Instance> instances = ec2comm.getInstance(instanceId);
+        return convertInstanceToServer(instances);
+    }
+
     private void throwPlatformException(Operation operationState,
             List<LocalizedText> providerMessages) throws APPlatformException {
         if (Operation.EC2_CREATION.equals(operationState)) {
@@ -193,9 +204,9 @@ public class EC2Processor {
     /**
      * Manage provisioning process.
      * 
-     * @param FlowState
+     * @param flowState
      *            flowState
-     * @param InstanceStatus
+     * @param result
      *            result
      * @return FlowState newState
      * @throws APPlatformException
@@ -228,6 +239,7 @@ public class EC2Processor {
             break;
 
         case CREATING:
+            LOGGER.info("trying to check sataus");
             if (isInstanceRunning(ec2comm)) {
                 accessInfo = Messages.get(ph.getCustomerLocale(),
                         "accessInfo_DNS", new Object[] {
@@ -307,9 +319,9 @@ public class EC2Processor {
     /**
      * Manage operation process.
      * 
-     * @param FlowState
+     * @param flowState
      *            flowState
-     * @param InstanceStatus
+     * @param result
      *            result
      * @return FlowState newState
      */
@@ -358,9 +370,9 @@ public class EC2Processor {
     /**
      * Manage activation process.
      * 
-     * @param FlowState
+     * @param flowState
      *            flowState
-     * @param InstanceStatus
+     * @param flowState
      *            result
      * @return FlowState newState
      * @throws APPlatformException
@@ -437,5 +449,24 @@ public class EC2Processor {
             return FlowState.DESTROYED;
         }
         return null;
+    }
+
+    private List<Server> convertInstanceToServer(List<Instance> instances) {
+        List<Server> servers = new ArrayList<>();
+        for (Instance instance : instances) {
+            Server server = new Server(instance.getInstanceId());
+            for (Tag tag : instance.getTags()) {
+                if (tag != null && tag.getKey() != null
+                        && tag.getKey().equals("Name")) {
+                    server.setName(tag.getValue());
+                }
+            }
+            server.setStatus(instance.getState().getName());
+            server.setType(instance.getInstanceType());
+            server.setPublicIP(Arrays.asList(instance.getPublicIpAddress()));
+            server.setPrivateIP(Arrays.asList(instance.getPrivateIpAddress()));
+            servers.add(server);
+        }
+        return servers;
     }
 }

@@ -13,7 +13,12 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.ResourceBundle;
+import java.util.Set;
 
 import javax.faces.application.FacesMessage;
 import javax.faces.component.UIInput;
@@ -25,7 +30,26 @@ import javax.servlet.http.HttpSession;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.oscm.internal.accountmgmt.AccountServiceManagement;
-import org.oscm.internal.intf.*;
+import org.oscm.internal.intf.AccountService;
+import org.oscm.internal.intf.BillingService;
+import org.oscm.internal.intf.CategorizationService;
+import org.oscm.internal.intf.ConfigurationService;
+import org.oscm.internal.intf.DiscountService;
+import org.oscm.internal.intf.IdentityService;
+import org.oscm.internal.intf.MarketplaceService;
+import org.oscm.internal.intf.MarketplaceServiceInternal;
+import org.oscm.internal.intf.PaymentService;
+import org.oscm.internal.intf.ReportingService;
+import org.oscm.internal.intf.SearchService;
+import org.oscm.internal.intf.SearchServiceInternal;
+import org.oscm.internal.intf.ServiceProvisioningService;
+import org.oscm.internal.intf.ServiceProvisioningServiceInternal;
+import org.oscm.internal.intf.SessionService;
+import org.oscm.internal.intf.SubscriptionService;
+import org.oscm.internal.intf.SubscriptionServiceInternal;
+import org.oscm.internal.intf.TagService;
+import org.oscm.internal.intf.TriggerDefinitionService;
+import org.oscm.internal.intf.TriggerService;
 import org.oscm.internal.landingpageconfiguration.LandingpageConfigurationService;
 import org.oscm.internal.operatorservice.LocalizedDataService;
 import org.oscm.internal.operatorservice.ManageLanguageService;
@@ -211,6 +235,7 @@ public class BaseBean {
     public static final String ERROR_BILLING_ID_ALREADY_EXISTS = "ex.NonUniqueBusinessKeyException.BILLING_ADAPTER";
     public static final String ERROR_NO_FILE_WITH_IDP_SETTINGS = "error.tenant.idpsettings.nofile";
     public static final String ERROR_MISSING_TENANTID = "error.missingtenant";
+    public static final String ERROR_TENANT_SETTINGS_MISSING = "error.missingtenantsettings";
     public static final String ERROR_TENANT_NO_LONGER_EXISTS = "error.tenant.noLongerExists";
     public static final String ERROR_MARKETPLACE_REMOVED = "error.tenant.marketplaceRemoved";
 
@@ -223,6 +248,7 @@ public class BaseBean {
     public static final String WARNING_UNIT_NOT_SELECTED_UNIT_ADMIN = "warning.editSubscription.subscriptionUnitNotSelected";
     public static final String WARNING_PAYMENT_TYPES_NOT_USED = "warning.paymentTypesAreNotUsed";
     public static final String WARNING_NO_CUSTOMER_ACCESS_TO_RESTRICTED_MPL = "warning.noCustomerAccessToRestrictedMpl";
+    public static final String WARNING_TENANT_DEF_NOT_COMPLETE = "warning.tenantDefinitionNotComplete";
 
     public static final String INFO_BILLING_CONTACT_DELETED = "info.billingContact.deleted";
     public static final String INFO_BILLING_CONTACT_DELETED_CONCURRENTLY = "info.billingContact.deletedConcurrently";
@@ -297,10 +323,12 @@ public class BaseBean {
     public static final String INFO_SUPPLIER_BANNED = "info.supplier.banned";
     public static final String INFO_SUPPLIER_BANLIFTED = "info.supplier.banlifted";
     public static final String INFO_PAYMENT_ENABLEMENT_SAVED = "info.paymentEnablment.saved";
+    public static final String INFO_RECREATE_INDEXES = "info.operator.indexes";
     public static final String TRIGGER_PROCESS_DELETED = "info.triggerProcess.deleted";
     public static final String TRIGGER_PROCESS_CANCELED = "info.triggerProcess.canceled";
     public static final String INFO_UDADEFINITIONS_DELETED = "info.udaDefinitions.deleted";
     public static final String INFO_UDADEFINITIONS_SAVED = "info.udaDefinitions.saved";
+    public static final String INFO_UDA_SAVED = "info.uda.saved";
     public static final String INFO_BRANDING_URL_SET = "info.brandingUrl.set";
     public static final String INFO_CATEGORIES_SAVED = "info.categories.saved";
     public static final String INFO_VAT_SAVED = "info.vat.saved";
@@ -409,6 +437,7 @@ public class BaseBean {
     public static final String OUTCOME_RELOAD = "reloadGroup";
 
     public static final String OUTCOME_STAY_ON_PAGE = null;
+    public static final String HIDDEN_PWD = "*****";
 
     // Without the @EJB annotation we can run the GUI without an EJB container
     IdentityService idService;
@@ -428,7 +457,6 @@ public class BaseBean {
     ReportingService reportingService;
     PaymentService paymentProcessingService;
     BillingService billingService;
-    SamlService samlService;
     MarketplaceService marketplaceService;
     MarketplaceServiceInternal marketplaceServiceInternal;
     ReviewInternalService reviewInternalService;
@@ -732,16 +760,6 @@ public class BaseBean {
     protected SessionService getSessionService() {
         sessionService = getService(SessionService.class, sessionService);
         return sessionService;
-    }
-
-    /**
-     * Returns the service to handle SAML based single sign on.
-     * 
-     * @return SamlService
-     */
-    protected SamlService getSamlService() {
-        samlService = getService(SamlService.class, samlService);
-        return samlService;
     }
 
     /**
@@ -1431,7 +1449,7 @@ public class BaseBean {
 
     /**
      * Checks if current user has access to admin portal
-     *
+     * 
      * @return true if user is organization admin or subscription manager or
      *         technology manager, otherwise false.
      */
@@ -1439,8 +1457,10 @@ public class BaseBean {
         VOUserDetails user = this.getUserFromSessionWithoutException();
         return user != null
                 && (user.getUserRoles().contains(UserRoleType.SERVICE_MANAGER)
-                || user.getUserRoles().contains(UserRoleType.TECHNOLOGY_MANAGER)
-                || user.getUserRoles().contains(UserRoleType.MARKETPLACE_OWNER))
+                        || user.getUserRoles()
+                                .contains(UserRoleType.TECHNOLOGY_MANAGER)
+                        || user.getUserRoles()
+                                .contains(UserRoleType.MARKETPLACE_OWNER))
                 || user.getUserRoles().contains(UserRoleType.BROKER_MANAGER)
                 || user.getUserRoles().contains(UserRoleType.RESELLER_MANAGER)
                 || user.getUserRoles().contains(UserRoleType.PLATFORM_OPERATOR);

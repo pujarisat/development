@@ -178,6 +178,14 @@
     </navigation-case>
   </navigation-rule>
   <navigation-rule>
+    <from-view-id>/marketplace/account/attributes.xhtml</from-view-id>
+    <navigation-case>
+      <from-outcome>success</from-outcome>
+      <to-view-id>/marketplace/account/attributes.xhtml</to-view-id>
+      <redirect />
+    </navigation-case>
+  </navigation-rule>
+  <navigation-rule>
     <navigation-case>
       <from-outcome>login</from-outcome>
       <to-view-id>/login.xhtml</to-view-id>
@@ -854,6 +862,14 @@
     <navigation-case>
       <from-outcome>success</from-outcome>
       <to-view-id>/operator/manageUsers.xhtml</to-view-id>
+      <redirect />
+    </navigation-case>
+  </navigation-rule>
+  <navigation-rule>
+    <from-view-id>/operator/manageIndexes.xhtml</from-view-id>
+    <navigation-case>
+      <from-outcome>success</from-outcome>
+      <to-view-id>/operator/manageIndexes.xhtml</to-view-id>
       <redirect />
     </navigation-case>
   </navigation-rule>

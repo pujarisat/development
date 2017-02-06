@@ -48,6 +48,7 @@ public class AccountNavigationModel implements Serializable {
     private static final String PROCESSES_LINK = "account/processes.jsf";
     private static final String OPERATIONS_LINK = "account/operations.jsf";
     private static final long serialVersionUID = 5299680432886964724L;
+    private String baseUrl;
 
     private final List<String> link;
     private final List<String> title;
@@ -66,20 +67,20 @@ public class AccountNavigationModel implements Serializable {
     }
 
     private void initHiddenElement() {
-        getHiddenElement().add(
-                HiddenUIConstants.MARKETPLACE_MENU_ITEM_ACCOUNT_PROFILE);
-        getHiddenElement().add(
-                HiddenUIConstants.MARKETPLACE_MENU_ITEM_ACCOUNT_PAYMENT);
+        getHiddenElement()
+                .add(HiddenUIConstants.MARKETPLACE_MENU_ITEM_ACCOUNT_PROFILE);
+        getHiddenElement()
+                .add(HiddenUIConstants.MARKETPLACE_MENU_ITEM_ACCOUNT_PAYMENT);
         getHiddenElement().add(
                 HiddenUIConstants.MARKETPLACE_MENU_ITEM_ACCOUNT_SUBSCRIPTIONS);
-        getHiddenElement().add(
-                HiddenUIConstants.MARKETPLACE_MENU_ITEM_ACCOUNT_USERS);
-        getHiddenElement().add(
-                HiddenUIConstants.MARKETPLACE_MENU_ITEM_ACCOUNT_UNITS);
-        getHiddenElement().add(
-                HiddenUIConstants.MARKETPLACE_MENU_ITEM_ACCOUNT_REPORTS);
-        getHiddenElement().add(
-                HiddenUIConstants.MARKETPLACE_MENU_ITEM_ACCOUNT_PROCESSES);
+        getHiddenElement()
+                .add(HiddenUIConstants.MARKETPLACE_MENU_ITEM_ACCOUNT_USERS);
+        getHiddenElement()
+                .add(HiddenUIConstants.MARKETPLACE_MENU_ITEM_ACCOUNT_UNITS);
+        getHiddenElement()
+                .add(HiddenUIConstants.MARKETPLACE_MENU_ITEM_ACCOUNT_REPORTS);
+        getHiddenElement()
+                .add(HiddenUIConstants.MARKETPLACE_MENU_ITEM_ACCOUNT_PROCESSES);
         getHiddenElement().add(
                 HiddenUIConstants.MARKETPLACE_MENU_ITEM_ACCOUNT_OPERATIONS);
         getHiddenElement().add(
@@ -99,9 +100,10 @@ public class AccountNavigationModel implements Serializable {
         getTitle().add(MARKETPLACE_ACCOUNT_ADMINISTRATION_TITLE);
     }
 
-    private void initLink() {
-        final String serverBaseUrl = getAppBean().getServerBaseUrl();
-        final String mpBase = serverBaseUrl + "/marketplace/";
+    void initLink() {
+        link.clear();
+        final String baseURL = getBaseUrl();
+        final String mpBase = baseURL + "/marketplace/";
         getLink().add(mpBase + ACCOUNT_LINK);
         getLink().add(mpBase + PROFILE_LINK);
         getLink().add(mpBase + PAYMENT_LINK);
@@ -142,5 +144,20 @@ public class AccountNavigationModel implements Serializable {
 
     public void setUserBean(UserBean userBean) {
         this.userBean = userBean;
+    }
+
+    /**
+     * @return the baseUrl
+     */
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    /**
+     * @param baseUrl
+     *            the baseUrl to set
+     */
+    public void setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
     }
 }
